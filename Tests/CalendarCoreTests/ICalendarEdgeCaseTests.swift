@@ -49,9 +49,8 @@ final class ICalendarEdgeCaseTests: XCTestCase {
                 )
             ],
             now: "2026-03-07T00:00:00Z")
-        XCTAssertEqual(
-            preview.events.compactMap { $0.end?.timeIntervalSince($0.start) },
-            [23 * 3_600, 24 * 3_600, 24 * 3_600])
+        let expectedDurations: [TimeInterval] = [23 * 3_600, 24 * 3_600, 24 * 3_600]
+        XCTAssertEqual(preview.events.compactMap { $0.end?.timeIntervalSince($0.start) }, expectedDurations)
         XCTAssertEqual(preview.events.last?.end, date("2026-03-10T16:00:00Z"))
     }
 
