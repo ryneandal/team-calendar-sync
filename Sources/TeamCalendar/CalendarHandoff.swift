@@ -51,7 +51,7 @@ enum CalendarHandoff {
             case .calendarNotInstalled:
                 "Apple Calendar couldn’t be found. Copy the feed link and add it in your calendar app."
             case .couldNotOpen:
-                "No calendar handler opened this link. Copy the feed URL and add it using your calendar app’s subscription option."
+                "No app could open this calendar link. Copy the feed URL and add it using your calendar app’s subscription option."
             }
         }
     }

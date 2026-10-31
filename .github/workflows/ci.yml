@@ -52,7 +52,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        device: [iPhone-16, iPad-Pro-11-inch-M4]
+        device: [iPhone-16, iPad-Pro-11-inch-M4-8GB]
     env:
       DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
     steps:

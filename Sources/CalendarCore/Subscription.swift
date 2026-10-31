@@ -43,7 +43,7 @@ public enum CalendarDestination: String, Codable, CaseIterable, Identifiable, Se
     }
     public var subtitle: String {
         switch self {
-        case .system: "Open calendar links using this device’s handler"
+        case .system: "Use this device’s calendar app"
         case .apple: "iCloud or On My Mac"
         case .google: "Your Google account"
         case .outlook: "Microsoft 365, Outlook.com, or Exchange"
@@ -87,7 +87,7 @@ public struct SubscriptionTarget: Codable, Hashable, Sendable {
     public var instructions: String {
         switch destination {
         case .system:
-            "Your device opens this subscription link in its calendar handler. Review the calendar and choose Subscribe. If it can’t open the link, copy it and use your calendar app’s Add Subscription Calendar or Subscribe from URL option. Return here after completing setup to confirm."
+            "Open this subscription in your device’s calendar app, then review it and choose Subscribe. If the link doesn’t open, copy it and use your calendar app’s Add Subscription Calendar or Subscribe from URL option. Return here after completing setup to confirm."
         case .apple:
             #if os(iOS)
                 "In Calendar, review the subscription and choose Add or Subscribe. If the prompt doesn’t appear, copy the link, open Calendars → Add Calendar → Add Subscription Calendar, and paste it."

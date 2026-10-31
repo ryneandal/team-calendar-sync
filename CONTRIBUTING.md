@@ -16,7 +16,7 @@ For iOS, open `TeamCalendar.xcodeproj` and use the `TeamCalendar-iOS` scheme. It
 
 CI tests iPhone and iPad on iOS 18.5 and retains Apple Silicon/Intel Mac builds with Xcode 16.4. Live providers are deliberately excluded from CI. See GitHub's [runner reference](https://docs.github.com/en/actions/reference/runners/github-hosted-runners) for available environments.
 
-The iOS Xcode project links the local `CalendarCore` package and compiles the shared app sources. Add new app/test files to the appropriate Xcode target as well as their Swift package directory. The mobile icon is an opaque 1024-pixel asset, reproducible with `swift scripts/make-mobile-icon.swift Mobile/Assets.xcassets/AppIcon.appiconset/AppIcon.png`.
+The iOS Xcode project links the local `CalendarCore` package and compiles the shared app sources. Its application target is named `TeamCalendariOS` to avoid a UI-test host collision with the package's Mac executable; the product and module remain `TeamCalendar`. Add new app/test files to the appropriate Xcode target as well as their Swift package directory. The mobile icon is an opaque 1024-pixel asset, reproducible with `swift scripts/make-mobile-icon.swift Mobile/Assets.xcassets/AppIcon.appiconset/AppIcon.png`.
 
 ## Code and design
 
