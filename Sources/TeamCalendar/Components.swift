@@ -54,7 +54,7 @@ struct SmallHeading: View {
     let text: String
     var body: some View {
         Text(text.uppercased())
-            .font(.system(size: 10, weight: .semibold)).tracking(1.1)
+            .font(.caption.weight(.semibold)).tracking(1.1)
             .foregroundStyle(.secondary)
     }
 }
@@ -74,7 +74,7 @@ struct EventRow: View {
             .frame(width: 43, height: 48)
             .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 8))
             VStack(alignment: .leading, spacing: 5) {
-                Text(event.title).font(.system(size: 12, weight: .medium))
+                Text(event.title).font(.subheadline.weight(.medium))
                     .fixedSize(horizontal: false, vertical: true)
                 Text(scheduleDescription)
                     .font(.caption).foregroundStyle(.secondary)

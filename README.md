@@ -1,8 +1,8 @@
 # Team Calendar
 
-[![macOS CI](https://github.com/ryneandal/team-calendar-sync/actions/workflows/ci.yml/badge.svg)](https://github.com/ryneandal/team-calendar-sync/actions/workflows/ci.yml)
+[![Apple platform CI](https://github.com/ryneandal/team-calendar-sync/actions/workflows/ci.yml/badge.svg)](https://github.com/ryneandal/team-calendar-sync/actions/workflows/ci.yml)
 
-A native macOS app for following sports, esports, actual-play shows, and spectator events in Apple Calendar, Google Calendar, or Outlook/Exchange.
+A native iPhone, iPad, and Mac app for following sports, esports, actual-play shows, and spectator events in your calendar.
 
 Browse 626 calendars, preview upcoming events, save favorites, and approve subscriptions in your chosen calendar app. Built with SwiftUI and Swift 6, with no third-party Swift dependencies.
 
@@ -21,7 +21,25 @@ Coverage is explicit: college football excludes Division II, Division III, and N
 
 ## Build and run
 
-Requires macOS 14 or later and Xcode 16 or later with Swift 6. No API keys or calendar account credentials are needed.
+Supports iOS/iPadOS 17 or later and macOS 14 or later. Build with Xcode 16 or later and Swift 6. No API keys or calendar account credentials are needed.
+
+### iPhone and iPad
+
+Open [TeamCalendar.xcodeproj](TeamCalendar.xcodeproj), choose the **TeamCalendar-iOS** scheme, and select an iPhone or iPad simulator. For a physical device, select your development team under **Signing & Capabilities** and use a unique bundle identifier if required by your account.
+
+To compile without launching a simulator or configuring signing:
+
+```sh
+xcodebuild build -project TeamCalendar.xcodeproj -scheme TeamCalendar-iOS \
+  -destination 'generic/platform=iOS Simulator' -derivedDataPath build/ios \
+  CODE_SIGNING_ALLOWED=NO
+```
+
+The interface uses a navigation stack on narrow windows and a sidebar/catalog/detail layout when space allows. Search, Favorites, selection, custom feeds, and the approval flow use the same library as the Mac app. Each installation stores its own library; favorites and history are not synced between devices.
+
+**Default Calendar** hands a `webcal` subscription link to the device's registered handler, typically Apple Calendar. It does not change the system default app or add individual events to the user's default writable calendar. If a calendar app does not handle subscription links, copy the feed URL and use its subscription option. In Apple Calendar, use **Calendars → Add Calendar → Add Subscription Calendar**. See [Apple's iPhone guidance](https://support.apple.com/en-ie/guide/iphone/iph3d1110d4/ios).
+
+### Mac
 
 ```sh
 git clone https://github.com/ryneandal/team-calendar-sync.git
@@ -30,7 +48,7 @@ swift test
 bash scripts/build-app.sh
 ```
 
-Open `build/Team Calendar.app` in Finder when ready. Build and test commands do not launch the app. For development, open `Package.swift` in Xcode or use `swift run TeamCalendar`.
+Open `build/Team Calendar.app` in Finder when ready. The Mac build and unit test commands do not launch the app. For development, open `Package.swift` in Xcode or use `swift run TeamCalendar`.
 
 The script creates an app for the current Mac's architecture and ad-hoc signs it. Developer ID signing and notarization are not configured; this is a source-built app, not a notarized release download.
 
@@ -43,6 +61,7 @@ The script creates an app for the current Mac's architecture and ad-hoc signs it
 
 | Destination | Handoff |
 | --- | --- |
+| Default Calendar | Opens a subscription link with the device's calendar handler. This is the initial destination on iPhone and iPad. |
 | Apple Calendar / iCloud | Opens the native subscription dialog. Choose **iCloud** or **On My Mac** as the location. |
 | Google Calendar | Opens Google's add-calendar URL, with a copyable feed URL as a fallback. |
 | Microsoft 365 / Outlook.com | Copies the URL and opens the selected web calendar. Use **Add calendar → Subscribe from web**. |
@@ -50,7 +69,7 @@ The script creates an app for the current Mac's architecture and ad-hoc signs it
 
 The destination service controls refresh timing. Team Calendar can be closed after subscribing. Confirmation is recorded by the user; the app cannot inspect or remove subscriptions in external services.
 
-Add a custom feed with `⇧⌘N`, refresh a preview with `⌘R`, and open Settings with `⌘,`.
+On iPhone/iPad, use the **More** menu to add a custom feed or open Settings. On Mac, add a custom feed with `⇧⌘N`, refresh a preview with `⌘R`, and open Settings with `⌘,`.
 
 Provider instructions: [Apple Calendar](https://support.apple.com/guide/calendar/icl1022/mac), [Google Calendar](https://support.google.com/calendar/answer/37100?hl=en), [Outlook](https://support.microsoft.com/en-us/office/import-or-subscribe-to-a-calendar-in-outlook-com-or-outlook-on-the-web-cff1429c-5af6-41ec-a5b4-74f2c278e98c).
 
@@ -58,15 +77,15 @@ Provider instructions: [Apple Calendar](https://support.apple.com/guide/calendar
 
 SwiftUI supplies the resizable split view, sidebar, toolbar search, native sheets, Settings, system typography, and light/dark appearance. Selection, favorites, and external subscription status are separate concepts. Keyboard shortcuts and descriptive accessibility labels accompany the visible controls.
 
-The code separates Foundation models, parsing, networking, and persistence in `CalendarCore` from observable app state, SwiftUI views, and an AppKit handoff adapter in `TeamCalendar`. Async validation follows an immutable review queue, and only explicit user confirmation completes a subscription.
+The code separates Foundation models, parsing, networking, and persistence in `CalendarCore` from observable app state, SwiftUI views, and AppKit/UIKit handoff adapters in `TeamCalendar`. The Xcode iOS target consumes the same local Swift package as the Mac app. Async validation follows an immutable review queue, and only explicit user confirmation completes a subscription.
 
 Read the [architecture](docs/ARCHITECTURE.md) for module boundaries, approval state, identity, concurrency, and preview limits. The UI follows Apple's [macOS](https://developer.apple.com/design/human-interface-guidelines/designing-for-macos), [sidebar](https://developer.apple.com/design/human-interface-guidelines/sidebars), and [toolbar](https://developer.apple.com/design/human-interface-guidelines/toolbars) guidance.
 
 ## Privacy and verification
 
-No EventKit access, passwords, OAuth tokens, or analytics are used. The library lives at `~/Library/Application Support/TeamCalendar/library.json`. Preview requests connect directly to feed providers; FBS links are resolved on demand using public team identifiers and then saved locally.
+No EventKit access, passwords, OAuth tokens, or analytics are used. The library lives at `~/Library/Application Support/TeamCalendar/library.json` on Mac and in the app's Application Support container on iOS. Preview requests connect directly to feed providers; FBS links are resolved on demand using public team identifiers and then saved locally.
 
-Offline tests cover catalog expectations, parsing, recurrence, routing, provider behavior, persistence, and approval state. CI runs tests and builds/signature-checks the app on Apple Silicon and Intel. Optional live verification is available through `python3 scripts/verify-feeds.py`.
+Offline tests cover catalog expectations, parsing, recurrence, routing, provider behavior, persistence, and approval state. CI also runs navigation tests on iPhone and iPad simulators, compiles a physical-device build, and retains Apple Silicon/Intel Mac checks. UI tests stop before approval and never subscribe a real account. Optional live verification is available through `python3 scripts/verify-feeds.py`.
 
 See [validation notes](docs/VALIDATION.md) for the dated provider checks, manual UI coverage, and untested external-account flows.
 

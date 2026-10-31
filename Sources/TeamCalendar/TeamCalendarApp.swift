@@ -7,53 +7,61 @@ struct TeamCalendarApp: App {
     @AppStorage("appearance") private var appearance = "system"
 
     var body: some Scene {
-        Window("Team Calendar", id: "main") {
-            ContentView(store: store)
-                .tint(.teal)
-                .preferredColorScheme(appearance == "light" ? .light : appearance == "dark" ? .dark : nil)
-        }
-        .defaultSize(width: 1180, height: 780)
-        .windowResizability(.contentMinSize)
-        .commands {
-            SidebarCommands()
-            CommandGroup(after: .newItem) {
-                Button("Add Calendar URL…") { store.beginCustomFeed() }
-                    .keyboardShortcut("n", modifiers: [.command, .shift])
-                    .disabled(store.isPresentingSheet)
-                Button("Review Selected Calendars…") { store.beginReview() }
-                    .keyboardShortcut(.return, modifiers: .command)
-                    .disabled(store.selectedIDs.isEmpty || store.isPresentingSheet)
+        #if os(macOS)
+            Window("Team Calendar", id: "main") {
+                ContentView(store: store)
+                    .tint(.teal)
+                    .preferredColorScheme(appearance == "light" ? .light : appearance == "dark" ? .dark : nil)
             }
-            CommandGroup(after: .toolbar) {
-                Button("Refresh Preview") { store.refreshToken = UUID() }
-                    .keyboardShortcut("r", modifiers: .command)
-            }
-            CommandGroup(replacing: .help) {
-                Menu("Calendar Sources") {
-                    ForEach(CalendarSourceDirectory.sources) { source in
-                        Link(source.name, destination: source.url)
-                    }
+            .defaultSize(width: 1180, height: 780)
+            .windowResizability(.contentMinSize)
+            .commands {
+                SidebarCommands()
+                CommandGroup(after: .newItem) {
+                    Button("Add Calendar URL…") { store.beginCustomFeed() }
+                        .keyboardShortcut("n", modifiers: [.command, .shift])
+                        .disabled(store.isPresentingSheet)
+                    Button("Review Selected Calendars…") { store.beginReview() }
+                        .keyboardShortcut(.return, modifiers: .command)
+                        .disabled(store.selectedIDs.isEmpty || store.isPresentingSheet)
                 }
-                Link(
-                    "Apple Calendar Subscription Help",
-                    destination: URL(string: "https://support.apple.com/guide/calendar/icl1022/mac")!)
-                Link(
-                    "Google Calendar Subscription Help",
-                    destination: URL(string: "https://support.google.com/calendar/answer/37100?hl=en")!)
-                Link(
-                    "Outlook Subscription Help",
-                    destination: URL(
-                        string:
-                            "https://support.microsoft.com/en-us/office/import-or-subscribe-to-a-calendar-in-outlook-com-or-outlook-on-the-web-cff1429c-5af6-41ec-a5b4-74f2c278e98c"
-                    )!)
+                CommandGroup(after: .toolbar) {
+                    Button("Refresh Preview") { store.refreshToken = UUID() }
+                        .keyboardShortcut("r", modifiers: .command)
+                }
+                CommandGroup(replacing: .help) {
+                    Menu("Calendar Sources") {
+                        ForEach(CalendarSourceDirectory.sources) { source in
+                            Link(source.name, destination: source.url)
+                        }
+                    }
+                    Link(
+                        "Apple Calendar Subscription Help",
+                        destination: URL(string: "https://support.apple.com/guide/calendar/icl1022/mac")!)
+                    Link(
+                        "Google Calendar Subscription Help",
+                        destination: URL(string: "https://support.google.com/calendar/answer/37100?hl=en")!)
+                    Link(
+                        "Outlook Subscription Help",
+                        destination: URL(
+                            string:
+                                "https://support.microsoft.com/en-us/office/import-or-subscribe-to-a-calendar-in-outlook-com-or-outlook-on-the-web-cff1429c-5af6-41ec-a5b4-74f2c278e98c"
+                        )!)
+                }
             }
-        }
 
-        Settings {
-            SettingsView(store: store)
-                .tint(.teal)
-                .preferredColorScheme(appearance == "light" ? .light : appearance == "dark" ? .dark : nil)
-        }
+            Settings {
+                SettingsView(store: store)
+                    .tint(.teal)
+                    .preferredColorScheme(appearance == "light" ? .light : appearance == "dark" ? .dark : nil)
+            }
+        #else
+            WindowGroup {
+                MobileContentView(store: store)
+                    .tint(.teal)
+                    .preferredColorScheme(appearance == "light" ? .light : appearance == "dark" ? .dark : nil)
+            }
+        #endif
     }
 }
 
@@ -69,8 +77,8 @@ struct SettingsView: View {
                     Text("Light").tag("light")
                     Text("Dark").tag("dark")
                 }
-                Picker("Default calendar app", selection: $store.target.destination) {
-                    ForEach(CalendarDestination.allCases) { Text($0.title).tag($0) }
+                Picker("Subscription destination", selection: $store.target.destination) {
+                    ForEach(CalendarDestination.available) { Text($0.title).tag($0) }
                 }
             }
             Section("About your subscriptions") {
@@ -78,7 +86,7 @@ struct SettingsView: View {
                     "Your calendar app refreshes subscriptions, even when Team Calendar is closed. Refresh timing is controlled by your calendar provider."
                 )
                 Text(
-                    "Team Calendar doesn’t read your personal calendar or ask for account passwords. Your selections and subscription history stay on this Mac. Previewing a feed connects directly to its provider."
+                    "Team Calendar doesn’t read your personal calendar or ask for account passwords. Your selections and subscription history stay on this device. Previewing a feed connects directly to its provider."
                 )
                 .foregroundStyle(.secondary)
             }
@@ -101,7 +109,9 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 500, height: 560)
+        #if os(macOS)
+            .frame(width: 500, height: 560)
+        #endif
         .onChange(of: store.target) { store.save() }
     }
 }

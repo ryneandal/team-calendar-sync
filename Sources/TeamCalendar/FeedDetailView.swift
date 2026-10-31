@@ -29,7 +29,11 @@ struct FeedDetailView: View {
             .frame(maxWidth: 580, alignment: .leading)
             .frame(maxWidth: .infinity)
         }
-        .background(Color(nsColor: .windowBackgroundColor))
+        #if os(macOS)
+            .background(Color(nsColor: .windowBackgroundColor))
+        #else
+            .background(Color(uiColor: .systemBackground))
+        #endif
         .task(id: store.refreshToken) { await loadPreview() }
         .confirmationDialog("Remove this custom calendar?", isPresented: $deletingCustom) {
             Button("Remove from Team Calendar", role: .destructive) { store.removeCustomFeed(feed) }
@@ -73,6 +77,9 @@ struct FeedDetailView: View {
                             systemImage: store.favoriteIDs.contains(feed.id) ? "star.fill" : "star")
                     }
                     .controlSize(.small)
+                    #if os(iOS)
+                        .frame(minHeight: 44)
+                    #endif
                     .accessibilityLabel(
                         "\(store.favoriteIDs.contains(feed.id) ? "Remove" : "Add") \(feed.name) \(store.favoriteIDs.contains(feed.id) ? "from" : "to") favorites"
                     )
@@ -83,13 +90,13 @@ struct FeedDetailView: View {
                 }
             }
             VStack(alignment: .leading, spacing: 6) {
-                Text(feed.name).font(.system(size: 29, weight: .bold, design: .rounded))
+                Text(feed.name).font(.system(.title, design: .rounded).bold())
                     .fixedSize(horizontal: false, vertical: true)
                 Text("\(feed.league) · \(feed.location)")
-                    .font(.system(size: 12)).foregroundStyle(.secondary)
+                    .font(.subheadline).foregroundStyle(.secondary)
             }
             Text(feed.introduction)
-                .font(.system(size: 13)).foregroundStyle(.secondary)
+                .font(.body).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             Button {
                 store.toggleSelection(feed)
@@ -106,7 +113,7 @@ struct FeedDetailView: View {
             )
             .accessibilityValue(store.selectedIDs.contains(feed.id) ? "Selected" : "Not selected")
             Text("You’ll choose an account and approve before subscribing.")
-                .font(.system(size: 10)).foregroundStyle(.secondary)
+                .font(.caption).foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity).multilineTextAlignment(.center)
         }
     }
@@ -119,9 +126,12 @@ struct FeedDetailView: View {
                 Button {
                     store.refreshToken = UUID()
                 } label: {
-                    Image(systemName: "arrow.clockwise").font(.system(size: 11))
+                    Image(systemName: "arrow.clockwise").font(.footnote)
                 }
                 .buttonStyle(.borderless).help("Refresh preview (⌘R)").disabled(loading)
+                #if os(iOS)
+                    .frame(minWidth: 44, minHeight: 44)
+                #endif
                 .accessibilityLabel("Refresh calendar preview")
             }
             if loading && preview == nil {
@@ -154,12 +164,12 @@ struct FeedDetailView: View {
                     Text(
                         "This is a partial preview. Some calendar details couldn’t be shown here. Your calendar app receives the original feed."
                     )
-                    .font(.system(size: 10)).foregroundStyle(.secondary)
+                    .font(.caption).foregroundStyle(.secondary)
                 } else if preview.containsRecurrence {
                     Text(
                         "Recurring dates are previewed for the next six months. The source controls breaks and schedule changes."
                     )
-                    .font(.system(size: 10)).foregroundStyle(.secondary)
+                    .font(.caption).foregroundStyle(.secondary)
                 }
                 VStack(alignment: .leading, spacing: 4) {
                     Label(
@@ -176,22 +186,22 @@ struct FeedDetailView: View {
         VStack(alignment: .leading, spacing: 14) {
             SmallHeading(text: "About this calendar")
             Label("Updates in your calendar app", systemImage: "arrow.triangle.2.circlepath")
-                .font(.system(size: 12, weight: .medium))
+                .font(.subheadline.weight(.medium))
             Text(
                 "A subscription follows changes to the schedule. Your calendar provider decides how often to refresh, so changes may take time to appear."
             )
-            .font(.system(size: 11)).foregroundStyle(.secondary)
+            .font(.footnote).foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
             HStack {
                 Text("Source").foregroundStyle(.secondary)
                 Spacer()
                 Link("\(feed.sourceName) ↗", destination: feed.sourceURL)
-            }.font(.system(size: 12))
+            }.font(.subheadline)
             Text(
                 (resolvedFeed ?? store.cachedFeed(feed)).feedURL?.absoluteString
                     ?? "The subscription link will appear after the preview loads."
             )
-            .font(.system(size: 10, design: .monospaced)).foregroundStyle(.secondary)
+            .font(.caption.monospaced()).foregroundStyle(.secondary)
             .textSelection(.enabled).lineLimit(3)
             HStack {
                 Button {
@@ -209,13 +219,17 @@ struct FeedDetailView: View {
                     } label: {
                         Image(systemName: "trash")
                     }.buttonStyle(.borderless).help("Remove custom calendar")
+                        .accessibilityLabel("Remove custom calendar")
+                        #if os(iOS)
+                            .frame(minWidth: 44, minHeight: 44)
+                        #endif
                 }
             }
             if feed.sport != .custom {
                 Text(
                     "\(feed.sourceKind) · \(feed.sourceName). Schedules may change; the feed may also include provider messages."
                 )
-                .font(.system(size: 10)).foregroundStyle(.tertiary)
+                .font(.caption).foregroundStyle(.tertiary)
             }
         }
     }
@@ -240,6 +254,9 @@ struct FeedDetailView: View {
                             Image(systemName: "minus.circle")
                         }
                         .buttonStyle(.borderless).help("Forget record; doesn’t unsubscribe")
+                        #if os(iOS)
+                            .frame(minWidth: 44, minHeight: 44)
+                        #endif
                         .accessibilityLabel("Forget \(targetDescription(record.target)) subscription record")
                     }
                     if record.target.destination == .outlook {

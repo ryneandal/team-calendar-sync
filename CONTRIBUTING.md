@@ -1,6 +1,6 @@
 # Contributing
 
-Team Calendar is a Swift 6 package for macOS 14 and later. Use Xcode 16 or later; there are no third-party Swift dependencies or required credentials.
+Team Calendar supports macOS 14+ and iOS/iPadOS 17+ with shared Swift 6 code. Use Xcode 16 or later; there are no third-party Swift dependencies or required credentials.
 
 ## Local workflow
 
@@ -12,7 +12,11 @@ codesign --verify --deep --strict "build/Team Calendar.app"
 
 These commands do not open the app. Open `build/Team Calendar.app` yourself when you want to check the UI. `swift run TeamCalendar` also launches it. The bundle script accepts `debug` for faster iteration.
 
-CI runs offline tests and builds the app on Apple Silicon and Intel macOS runners with Xcode 16.4. Live providers are deliberately excluded from CI. See GitHub's [runner reference](https://docs.github.com/en/actions/reference/runners/github-hosted-runners) for the available environments.
+For iOS, open `TeamCalendar.xcodeproj` and use the `TeamCalendar-iOS` scheme. Its unit-test target reuses the core and app-state tests; `Mobile/UITests` checks selection/review/cancellation at standard and accessibility text sizes. Run with `xcodebuild test -project TeamCalendar.xcodeproj -scheme TeamCalendar-iOS -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.5' CODE_SIGNING_ALLOWED=NO`, replacing the destination with an installed simulator. Tests launch the app in the simulator but never open a calendar handler or approve a subscription.
+
+CI tests iPhone and iPad on iOS 18.5 and retains Apple Silicon/Intel Mac builds with Xcode 16.4. Live providers are deliberately excluded from CI. See GitHub's [runner reference](https://docs.github.com/en/actions/reference/runners/github-hosted-runners) for available environments.
+
+The iOS Xcode project links the local `CalendarCore` package and compiles the shared app sources. Add new app/test files to the appropriate Xcode target as well as their Swift package directory. The mobile icon is an opaque 1024-pixel asset, reproducible with `swift scripts/make-mobile-icon.swift Mobile/Assets.xcassets/AppIcon.appiconset/AppIcon.png`.
 
 ## Code and design
 

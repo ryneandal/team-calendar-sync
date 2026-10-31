@@ -52,7 +52,7 @@ final class AppStore {
     private(set) var reviewTarget = SubscriptionTarget()
     var showingCustomFeed = false
     var errorMessage: String?
-    var target = SubscriptionTarget()
+    var target = SubscriptionTarget(destination: .preferred)
     var refreshToken = UUID()
     let client = FeedClient()
     private let libraryFile: LibraryFile
@@ -84,7 +84,9 @@ final class AppStore {
             errorMessage =
                 "Your saved library couldn’t be read and has been left untouched at \(libraryFile.url.path). Changes won’t be saved until it is repaired or moved."
         }
-        focusedID = catalog.first?.id
+        #if os(macOS)
+            focusedID = catalog.first?.id
+        #endif
     }
 
     var allFeeds: [CalendarFeed] { catalog + customFeeds }

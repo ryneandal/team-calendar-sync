@@ -12,9 +12,13 @@ Team Calendar helps users discover public feeds and complete a subscription in t
 | `LibraryFile` | Load and atomically save a versioned snapshot | Caller supplies the file URL; tests use temporary directories |
 | `AppStore` | Catalog navigation, favorites, selection, immutable review queue, subscription records | Main-actor observable state; injectable catalog and library path |
 | SwiftUI views | Discovery, details, review, handoff steps, and Settings | Bind to app state; transient view state stays in the owning view |
-| `CalendarHandoff` | Open Apple Calendar or a browser and copy feed URLs | The only subscription-related AppKit adapter |
+| `CalendarHandoff` | Open a calendar handler or browser and copy feed URLs | AppKit on Mac; UIKit on iOS; selected by conditional compilation |
 
 The package has no external Swift dependencies. Views share small native components and a single provider directory for Settings and Help. The bundled JSON is the catalog's source of truth; scripts propose updates for review.
+
+The Mac executable remains a Swift package target. `TeamCalendar.xcodeproj` supplies the iOS application, metadata, icon, and test hosts, linking the same local `CalendarCore` product. App state, previews, details, and approval logic are shared. `ContentView` retains the Mac layout; `MobileContentView` uses a native split view that collapses on compact widths, without desktop minimum dimensions or automatic first-result navigation. Mobile sheets scroll and use semantic text styles.
+
+The `system` destination opens a validated `webcal` URL through `UIApplication.open` on iOS or `NSWorkspace.open` on Mac. iOS chooses the handler; Team Calendar does not assume a third-party app's private URL scheme. `apple` remains a separate, backward-compatible Mac destination. New mobile libraries default to `system`; the existing `SubscriptionTarget` initializer and persisted Apple records keep their original meaning. Subscriptions are completed in the receiving app, with no EventKit authorization or event-copying loop.
 
 ## Approval and handoff
 
@@ -42,7 +46,7 @@ Favorites express long-term interest; selection is a temporary review queue. Sel
 
 Catalog IDs identify browsing state. Validated feed URLs identify resolved subscriptions, preventing a changed URL from inheriting an old confirmation. History groups all URL versions of a catalog entry and labels older feeds, so their pending setup remains accessible. A college feed's stable ID and public team key bridge its unresolved and resolved forms. Destination settings are normalized so irrelevant fields do not create duplicate records.
 
-The library is stored at `~/Library/Application Support/TeamCalendar/library.json`. It contains custom feeds, selected and favorite IDs, subscription records, the default target, and resolved public college URLs. Writes are atomic. Optional additions remain compatible with version-one libraries. Unreadable or unknown-version files are preserved, and saving is disabled with a visible error until the file is repaired or moved.
+The library is stored in Application Support (`~/Library/Application Support/TeamCalendar/library.json` on Mac; inside the app container on iOS). Each installation has its own library; there is no cross-device library sync. It contains custom feeds, selected and favorite IDs, subscription records, the default target, and resolved public college URLs. Writes are atomic. Optional additions remain compatible with version-one libraries. Unreadable or unknown-version files are preserved, and saving is disabled with a visible error until the file is repaired or moved.
 
 Subscription records retain source metadata. A removed custom source can still be selected from its history, and re-adding its URL restores the existing identity. Unknown saved selection and favorite IDs are pruned when loading.
 

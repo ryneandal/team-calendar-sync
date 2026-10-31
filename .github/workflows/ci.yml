@@ -1,4 +1,4 @@
-name: macOS CI
+name: Apple platform CI
 
 on:
   push:
@@ -44,3 +44,47 @@ jobs:
           bash -n scripts/build-app.sh
           python3 -m py_compile scripts/*.py
           git diff --check
+
+  ios:
+    name: iOS (${{ matrix.device }})
+    runs-on: macos-15
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        device: [iPhone-16, iPad-Pro-11-inch-M4]
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Create isolated simulator
+        id: simulator
+        env:
+          DEVICE_TYPE: ${{ matrix.device }}
+        run: |
+          device_id=$(xcrun simctl create "Team Calendar Tests" "com.apple.CoreSimulator.SimDeviceType.$DEVICE_TYPE" com.apple.CoreSimulator.SimRuntime.iOS-18-5)
+          echo "device_id=$device_id" >> "$GITHUB_OUTPUT"
+      - name: Unit and navigation tests
+        env:
+          DEVICE_ID: ${{ steps.simulator.outputs.device_id }}
+        run: |
+          xcodebuild test -project TeamCalendar.xcodeproj -scheme TeamCalendar-iOS -destination "platform=iOS Simulator,id=$DEVICE_ID" -derivedDataPath build/ios -resultBundlePath build/ios-tests.xcresult -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO
+      - name: Build for physical devices
+        if: matrix.device == 'iPhone-16'
+        run: |
+          xcodebuild build -project TeamCalendar.xcodeproj -scheme TeamCalendar-iOS -destination 'generic/platform=iOS' -configuration Release -derivedDataPath build/ios-device CODE_SIGNING_ALLOWED=NO
+      - name: Keep failed test results
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ios-${{ matrix.device }}-results
+          path: build/ios-tests.xcresult
+          retention-days: 7
+      - name: Remove simulator
+        if: always() && steps.simulator.outputs.device_id != ''
+        env:
+          DEVICE_ID: ${{ steps.simulator.outputs.device_id }}
+        run: xcrun simctl delete "$DEVICE_ID"

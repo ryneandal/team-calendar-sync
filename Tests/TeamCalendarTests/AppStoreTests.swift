@@ -33,7 +33,7 @@ final class AppStoreTests: XCTestCase {
             store.beginReview([feeds[2]])
             store.beginCustomFeed()
             XCTAssertEqual(store.reviewQueue, feeds)
-            XCTAssertEqual(store.reviewTarget.destination, .apple)
+            XCTAssertEqual(store.reviewTarget.destination, .preferred)
             XCTAssertFalse(store.showingCustomFeed)
 
             store.showingReview = false
@@ -152,7 +152,7 @@ final class AppStoreTests: XCTestCase {
             let pending = try XCTUnwrap(store.record(for: team, target: exchange))
             store.resume(record: pending)
             XCTAssertEqual(store.reviewTarget, exchange)
-            XCTAssertEqual(store.target, apple)
+            XCTAssertEqual(store.target.destination, .preferred)
             XCTAssertEqual(store.reviewQueue, [team])
             store.confirm(team, target: exchange)
             XCTAssertEqual(store.visibleFeeds.count, 1)

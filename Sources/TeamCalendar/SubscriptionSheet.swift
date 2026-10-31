@@ -44,48 +44,65 @@ struct SubscriptionSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 13) {
-                Image(
-                    systemName: finished
-                        ? (confirmedCount == feeds.count ? "checkmark.circle" : "clock") : "calendar.badge.plus"
-                )
-                .font(.system(size: 29, weight: .light)).foregroundStyle(.teal)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(
-                        finished
-                            ? (confirmedCount == feeds.count
-                                ? "Your calendar, a little more you." : "Ready when you are.")
-                            : approved ? "Finish in your calendar app" : "Make time for what you love."
-                    )
-                    .font(.system(size: 22, weight: .bold, design: .rounded))
-                    Text(
-                        finished
-                            ? "\(confirmedCount) of \(feeds.count) subscriptions confirmed by you."
-                            : approved
-                                ? "Calendar \(index + 1) of \(feeds.count) · \(target.destination.title)"
-                                : "Review your selection and choose where to subscribe."
-                    )
-                    .font(.system(size: 12)).foregroundStyle(.secondary)
-                }
-            }
-            .padding(26)
-            Divider()
+            #if os(macOS)
+                header
+                Divider()
+            #endif
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
+                    #if os(iOS)
+                        header
+                        Divider()
+                    #endif
                     if finished { completion } else if approved, let feed = current { handoff(feed) } else { review }
                 }
                 .padding(26)
             }
             Divider()
             footer.padding(20)
+                #if os(iOS)
+                    .controlSize(.large)
+                #endif
         }
-        .frame(width: 610, height: 690)
+        #if os(macOS)
+            .frame(width: 610, height: 690)
+        #endif
         .interactiveDismissDisabled(opening)
         .task(id: validationRequest) {
             let request = validationRequest
             guard request.approved, request.feed != nil else { return }
             await validate(request)
         }
+    }
+
+    private var header: some View {
+        HStack(spacing: 13) {
+            Image(
+                systemName: finished
+                    ? (confirmedCount == feeds.count ? "checkmark.circle" : "clock") : "calendar.badge.plus"
+            )
+            .font(.system(size: 29, weight: .light)).foregroundStyle(.teal)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(
+                    finished
+                        ? (confirmedCount == feeds.count
+                            ? "Your calendar, a little more you." : "Ready when you are.")
+                        : approved ? "Finish in your calendar app" : "Make time for what you love."
+                )
+                .font(.system(.title2, design: .rounded).bold())
+                Text(
+                    finished
+                        ? "\(confirmedCount) of \(feeds.count) subscriptions confirmed by you."
+                        : approved
+                            ? "Calendar \(index + 1) of \(feeds.count) · \(target.destination.title)"
+                            : "Review your selection and choose where to subscribe."
+                )
+                .font(.subheadline).foregroundStyle(.secondary)
+            }
+        }
+        #if os(macOS)
+            .padding(26)
+        #endif
     }
 
     private var review: some View {
@@ -97,7 +114,7 @@ struct SubscriptionSheet: View {
                         HStack(alignment: .top, spacing: 12) {
                             TeamBadge(feed: feed, size: 32)
                             VStack(alignment: .leading, spacing: 4) {
-                                Text(feed.name).font(.system(size: 12, weight: .medium))
+                                Text(feed.name).font(.subheadline.weight(.medium))
                                 Text(feed.sourceName).font(.caption).foregroundStyle(.secondary)
                                 if let coverage = feed.coverage {
                                     Text(coverage).font(.caption).foregroundStyle(.secondary)
@@ -114,7 +131,7 @@ struct SubscriptionSheet: View {
             }
             VStack(alignment: .leading, spacing: 12) {
                 SmallHeading(text: "Choose your calendar app")
-                ForEach(CalendarDestination.allCases) { destination in
+                ForEach(CalendarDestination.available) { destination in
                     Button {
                         target.destination = destination
                     } label: {
@@ -123,8 +140,8 @@ struct SubscriptionSheet: View {
                                 .foregroundStyle(destination == target.destination ? Color.teal : Color.secondary)
                                 .frame(width: 30)
                             VStack(alignment: .leading, spacing: 3) {
-                                Text(destination.title).font(.system(size: 13, weight: .semibold))
-                                Text(destination.subtitle).font(.system(size: 11)).foregroundStyle(.secondary)
+                                Text(destination.title).font(.headline)
+                                Text(destination.subtitle).font(.footnote).foregroundStyle(.secondary)
                             }
                             Spacer()
                             Image(systemName: destination == target.destination ? "largecircle.fill.circle" : "circle")
@@ -153,6 +170,11 @@ struct SubscriptionSheet: View {
                     }
                     if target.outlookAccount == .other {
                         TextField("Exchange web calendar URL (https://…)", text: $target.exchangeURL)
+                            #if os(iOS)
+                                .keyboardType(.URL)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
+                            #endif
                             .textFieldStyle(.roundedBorder)
                             .accessibilityLabel("Exchange web calendar URL")
                         Text(
@@ -166,7 +188,7 @@ struct SubscriptionSheet: View {
                 Text(
                     "Only the selected public feed links are passed to your calendar app. You’ll finish approval there. Feeds may include provider messages."
                 )
-                .font(.system(size: 11)).foregroundStyle(.secondary)
+                .font(.footnote).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             } icon: {
                 Image(systemName: "hand.raised").foregroundStyle(.secondary)
@@ -188,13 +210,13 @@ struct SubscriptionSheet: View {
             VStack(alignment: .leading, spacing: 12) {
                 Label("1. Open your calendar app", systemImage: "arrow.up.forward.app")
                     .font(.headline)
-                Text(target.instructions).font(.system(size: 12)).foregroundStyle(.secondary)
+                Text(target.instructions).font(.subheadline).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 Text(preparedFeed?.feedURL?.absoluteString ?? "Preparing the subscription link…")
-                    .font(.system(size: 11, design: .monospaced))
+                    .font(.caption.monospaced())
                     .textSelection(.enabled).padding(12).frame(maxWidth: .infinity, alignment: .leading)
                     .background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 8))
-                HStack {
+                actionLayout {
                     Button {
                         guard let preparedFeed, !opening else { return }
                         CalendarHandoff.copyURL(preparedFeed)
@@ -204,7 +226,9 @@ struct SubscriptionSheet: View {
                         Label(copied ? "Copied" : "Copy feed URL", systemImage: copied ? "checkmark" : "doc.on.doc")
                     }
                     .disabled(preparedFeed == nil || opening)
-                    Spacer()
+                    #if os(macOS)
+                        Spacer()
+                    #endif
                     Button {
                         guard let preparedFeed, !opening else { return }
                         opening = true
@@ -242,7 +266,7 @@ struct SubscriptionSheet: View {
                 Text(
                     "After completing the steps in \(target.destination.title), return here. Opening the app or copying the link alone doesn’t add the subscription."
                 )
-                .font(.system(size: 12)).foregroundStyle(.secondary)
+                .font(.subheadline).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
                 if record?.status == .confirmed {
                     Label("You’ve already confirmed this subscription.", systemImage: "checkmark.circle.fill")
@@ -271,7 +295,7 @@ struct SubscriptionSheet: View {
                 HStack(spacing: 12) {
                     TeamBadge(feed: feed, size: 38)
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(feed.name).font(.system(size: 13, weight: .medium))
+                        Text(feed.name).font(.headline)
                         Text(
                             confirmed
                                 ? "Confirmed by you"
@@ -290,7 +314,7 @@ struct SubscriptionSheet: View {
             }
             Divider()
             Text("Your calendar app will keep subscriptions up to date. You can close Team Calendar whenever you like.")
-                .font(.system(size: 12)).foregroundStyle(.secondary)
+                .font(.subheadline).foregroundStyle(.secondary)
             if confirmedCount < feeds.count {
                 Button("Revisit Unfinished Calendars") {
                     index = feeds.firstIndex { store.record(for: $0, target: target)?.status != .confirmed } ?? 0
@@ -301,11 +325,13 @@ struct SubscriptionSheet: View {
     }
 
     private var footer: some View {
-        HStack {
+        actionLayout {
             Button(finished ? "Close" : "Finish Later") { dismiss() }
                 .keyboardShortcut(.cancelAction)
                 .disabled(opening)
-            Spacer()
+            #if os(macOS)
+                Spacer()
+            #endif
             if finished {
                 Button("View My Subscriptions") {
                     store.showSubscriptions(focusing: feeds.first?.id)
@@ -332,6 +358,14 @@ struct SubscriptionSheet: View {
                 )
             }
         }
+    }
+
+    private var actionLayout: AnyLayout {
+        #if os(iOS)
+            AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
+        #else
+            AnyLayout(HStackLayout())
+        #endif
     }
 
     private func validate(_ request: ValidationRequest) async {

@@ -3,5 +3,7 @@ build/
 .DS_Store
 .swiftpm/
 *.xcuserstate
+xcuserdata/
+*.xcresult/
 __pycache__/
 *.pyc

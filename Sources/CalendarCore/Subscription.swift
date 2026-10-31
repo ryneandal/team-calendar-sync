@@ -15,10 +15,27 @@ extension CalendarFeed {
 }
 
 public enum CalendarDestination: String, Codable, CaseIterable, Identifiable, Sendable {
-    case apple, google, outlook
+    case system, apple, google, outlook
     public var id: String { rawValue }
+
+    public static var preferred: Self {
+        #if os(iOS)
+            .system
+        #else
+            .apple
+        #endif
+    }
+
+    public static var available: [Self] {
+        #if os(iOS)
+            [.system, .google, .outlook]
+        #else
+            allCases
+        #endif
+    }
     public var title: String {
         switch self {
+        case .system: "Default Calendar"
         case .apple: "Apple Calendar"
         case .google: "Google Calendar"
         case .outlook: "Outlook & Exchange"
@@ -26,6 +43,7 @@ public enum CalendarDestination: String, Codable, CaseIterable, Identifiable, Se
     }
     public var subtitle: String {
         switch self {
+        case .system: "Open calendar links using this device’s handler"
         case .apple: "iCloud or On My Mac"
         case .google: "Your Google account"
         case .outlook: "Microsoft 365, Outlook.com, or Exchange"
@@ -33,7 +51,7 @@ public enum CalendarDestination: String, Codable, CaseIterable, Identifiable, Se
     }
     public var symbol: String {
         switch self {
-        case .apple: "calendar"
+        case .system, .apple: "calendar"
         case .google: "globe"
         case .outlook: "envelope.badge"
         }
@@ -68,8 +86,14 @@ public struct SubscriptionTarget: Codable, Hashable, Sendable {
 
     public var instructions: String {
         switch destination {
+        case .system:
+            "Your device opens this subscription link in its calendar handler. Review the calendar and choose Subscribe. If it can’t open the link, copy it and use your calendar app’s Add Subscription Calendar or Subscribe from URL option. Return here after completing setup to confirm."
         case .apple:
-            "In Calendar, choose Subscribe. Set Location to iCloud to see the calendar on your other devices, or On My Mac for this Mac. Choose an auto-refresh interval, then click OK."
+            #if os(iOS)
+                "In Calendar, review the subscription and choose Add or Subscribe. If the prompt doesn’t appear, copy the link, open Calendars → Add Calendar → Add Subscription Calendar, and paste it."
+            #else
+                "In Calendar, choose Subscribe. Set Location to iCloud to see the calendar on your other devices, or On My Mac for this Mac. Choose an auto-refresh interval, then click OK."
+            #endif
         case .google:
             "Sign in to the Google account you want to use, then confirm Add. If Google doesn’t show the prompt, choose Other calendars → + → From URL and paste the feed link."
         case .outlook:
@@ -88,7 +112,7 @@ public struct SubscriptionTarget: Codable, Hashable, Sendable {
         guard let url = feed.feedURL else { throw FeedError.unresolvedSubscription }
         let feedURL = try FeedURL.validated(url.absoluteString)
         switch destination {
-        case .apple:
+        case .system, .apple:
             return try FeedURL.webcal(feedURL)
         case .google:
             var components = URLComponents(string: "https://calendar.google.com/calendar/render")!
